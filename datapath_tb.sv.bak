@@ -1,0 +1,506 @@
+`define n 16
+
+module datapath_tb ();
+	reg clk, vsel, loada, loadb, asel, bsel, loadc, loads, write, err;
+	reg [2:0] readnum, writenum;
+	reg [1:0] shift, ALUop;
+	reg [15:0] datapath_in;
+	wire Z_out;
+	wire [15:0] datapath_out;
+
+	//The line below instantiate datapath as the device under test in this testbench
+	datapath DUT(.clk(clk), 
+					  .readnum(readnum), .vsel(vsel), .loada(loada), .loadb(loadb), 
+					  .shift(shift), .asel(asel), .bsel(bsel), .ALUop(ALUop), 
+					  .loadc(loadc), .loads(loads), .writenum(writenum), 
+					  .write(write), .datapath_in(datapath_in), .Z_out(Z_out), .datapath_out(datapath_out) );
+
+	/*
+	The task data_checker checks if specific outputs of modules is as expected. It outputs an 
+	error message stating the actual value and the expected value if an error 
+	occurs. It also sets error to 1 to be displayed on the waveform.
+	*/
+	task data_checker; 
+		input [`n-1:0] expected_DataOut;
+		input [`n-1:0] expected_sout;
+		input [`n-1:0] expected_ALUout;
+		input expected_Z;
+		input [`n-1:0] expected_datapath_out;
+
+	begin
+		if (datapath_tb.DUT.DataOut !== expected_DataOut ) begin
+			$display("ERROR ** Regfile Output is %b, expected %b", datapath_tb.DUT.DataOut, expected_DataOut );
+			err = 1'b1;
+		end
+		
+		if (datapath_tb.DUT.shifterOut !== expected_sout ) begin
+			$display("ERROR ** shifter Output is %b, expected %b", datapath_tb.DUT.shifterOut, expected_sout );
+			err = 1'b1;
+		end
+		
+		if (datapath_tb.DUT.ALUout !== expected_ALUout ) begin
+			$display("ERROR ** ALU output is %b, expected %b", datapath_tb.DUT.ALUout, expected_ALUout );
+			err = 1'b1;
+		end
+		
+		if (datapath_tb.DUT.Z_out !== expected_Z ) begin
+			$display("ERROR ** Z is %b, expected %b", datapath_tb.DUT.Z_out, expected_Z );
+			err = 1'b1;
+		end
+		
+		if (datapath_tb.DUT.datapath_out !== expected_datapath_out ) begin
+			$display("ERROR ** Datapath_out is %b, expected %b", datapath_tb.DUT.datapath_out, expected_datapath_out );
+			err = 1'b1;
+		end
+		
+	end
+	
+	endtask
+	
+	initial begin //Sets the clock to be at a 5 time unit interval
+		clk = 1'b0; 
+		#5;
+			repeat(45) begin
+				clk = 1'b1; #5;
+				clk = 1'b0; #5;
+			end
+	end
+	
+	initial begin
+		/*
+		//Redoing all previous operation but with addtion using new values
+		//MOV R0, #7
+		$display("checking R0 = HEX 7");
+		err = 1'b0;
+		write = 1'b1;
+		writenum = 3'b000;
+		readnum = 3'b000;
+		datapath_in = 8'h7;
+		vsel = 1'b1;
+		#10;
+		data_checker(16'h7, 16'hFFD0, 16'h0, 1'b1, 16'h0);
+		
+		
+		//Change in input: writenum = 5, readnum = 5, data_in = h13
+		//MOV R1, #2
+		$display("checking R1 = HEX 2");
+		writenum = 3'b001;
+		readnum = 3'b001;
+		datapath_in = 8'h2;
+		vsel = 1'b1;
+		#10;
+		data_checker(16'h2, 16'hFFD0, 16'h0, 1'b1, 16'h0);
+		write = 1'b0; //set write to 0 so we can read values instead
+		
+		//Change in input: readnum = 3, loadb = 1, shift = 0
+		//store R7 in register B
+		$display("checking data_out = R7");
+		readnum = 3'b000;
+		loadb = 1'b1;
+		#10;
+		data_checker(16'hFFD0, 16'hFFD0, 16'hFFE3, 1'bx, 16'hFFD0);
+		loadb = 1'b0; //set loadb = 1
+		
+		//Change in input: readnum = 5, loada = 1
+		//store R5 in register A
+		$display("checking data_out = R5");
+		readnum = 3'b001;
+		loada = 1'b1;		
+		#10;
+		data_checker(16'h30, 16'hFFD0, 16'h0, 1'bx, 16'hFFE3);
+		loada = 1'b0;
+		
+		//Change in input: asel = 0, bsel = 0, shift = 0, ALUop = 0, loadc = 1
+		//Testing ADD R6, R5, R7
+		$display("checking ALUout = R5 + R7");
+		asel = 1'b0;
+		bsel = 1'b0;
+		shift = 2'b01;
+		ALUop = 2'b00;
+		loadc = 1'b1;
+		loads = 1'b0;
+		#10;
+		data_checker(16'h30, 16'hFFD0, 16'h0, 1'b1, 16'h0);
+
+		//Change in input: data_in = HEX 3, writenum = 6, readnum = 6
+		//Testing storing datapath_out in R6
+		$display("checking R6 = HEX 0");
+		writenum = 3'b110;
+		readnum = 3'b110;
+		vsel = 1'b0;
+		write = 1'b1;
+		datapath_in = 8'h21;
+		#10;
+		data_checker(16'h0, 16'hFFD0, 16'h0, 1'b1, 16'h0);		
+		
+		
+		$stop;
+		
+		
+		
+		*/
+		
+		
+		
+		//Change in inputs: write = 1, writenum = 3, readnum = 3, data_in = h42, vsel = 1, & sets error to 0
+		//MOV R3, #42
+		$display("checking R3 = HEX 42");
+		err = 1'b0;
+		write = 1'b1;
+		writenum = 3'b011;
+		readnum = 3'b011;
+		datapath_in = 8'h42;
+		vsel = 1'b1;
+		#10;
+		data_checker(16'h42, 16'bx, 16'bx, 1'bx, 16'bx);
+		
+		//Change in input: writenum = 5, readnum = 5, data_in = h13
+		//MOV R5, #13
+		$display("checking R5 = HEX 13");
+		writenum = 3'b101;
+		readnum = 3'b101;
+		datapath_in = 8'h13;
+		#10;
+		data_checker(16'h13, 16'bx, 16'bx, 1'bx, 16'bx);
+		write = 1'b0; //set write to 0 so we can read values instead
+		
+		//Change in input: readnum = 3, loadb = 1, shift = 0
+		//store R3 in register B
+		$display("checking data_out = R3");
+		readnum = 3'b011;
+		loadb = 1'b1;
+		#10;
+		data_checker(16'h42, 16'bx, 16'bx, 1'bx, 16'bx);
+		loadb = 1'b0; //set loadb = 1
+		
+		//Change in input: readnum = 5, loada = 1
+		//store R5 in register A
+		$display("checking data_out = R5");
+		readnum = 3'b101;
+		loada = 1'b1;		
+		#10;
+		data_checker(16'h13, 16'bx, 16'bx, 1'bx, 16'bx);
+		loada = 1'b0;
+		
+		//Change in input: asel = 0, bsel = 0, shift = 0, ALUop = 0, loadc = 1
+		//Testing ADD R2, R5, R3
+		$display("checking ALUout = R5 + R3");
+		asel = 1'b0;
+		bsel = 1'b0;
+		shift = 2'b00;
+		ALUop = 2'b00;
+		loadc = 1'b1;
+		#10;
+		data_checker(16'h13, 16'h42, 16'h55, 1'bx, 16'h55);
+
+		//Change in input: data_in = HEX 3, writenum = 2, readnum = 2
+		//Testing storing datapath_out in R2
+		$display("checking R2 = HEX 55");
+		writenum = 3'b010;
+		readnum = 3'b010;
+		vsel = 1'b0;
+		write = 1'b1;
+		datapath_in = 8'h21;
+		#10;
+		data_checker(16'h55, 16'h42, 16'h55, 1'bx, 16'h55);	
+	
+//Redoing all previous operation but with subtration
+		//MOV R3, #42
+		$display("checking R3 = HEX 42");
+		writenum = 3'b011;
+		readnum = 3'b011;
+		datapath_in = 8'h42;
+		vsel = 1'b1;
+		#10;
+		data_checker(16'h42, 16'h42, 16'h55, 1'bx, 16'h55);
+		
+		//Change in input: writenum = 5, readnum = 5, data_in = h13
+		//MOV R5, #13
+		$display("checking R5 = HEX 13");
+		writenum = 3'b101;
+		readnum = 3'b101;
+		datapath_in = 8'h13;
+		#10;
+		data_checker(16'h13, 16'h42, 16'h55, 1'bx, 16'h55);
+		write = 1'b0; //set write to 0 so we can read values instead
+		
+		//Change in input: readnum = 3, loadb = 1, shift = 0
+		//store R3 in register B
+		$display("checking data_out = R3");
+		readnum = 3'b011;
+		loadb = 1'b1;
+		#10;
+		data_checker(16'h42, 16'h42, 16'h55, 1'bx, 16'h55);
+		loadb = 1'b0; //set loadb = 1
+		
+		//Change in input: readnum = 5, loada = 1
+		//store R5 in register A
+		$display("checking data_out = R5");
+		readnum = 3'b101;
+		loada = 1'b1;		
+		#10;
+		data_checker(16'h13, 16'h42, 16'h55, 1'bx, 16'h55);
+		loada = 1'b0;
+		
+		//Change in input: asel = 0, bsel = 0, shift = 0, ALUop = 1, loadc = 1
+		//Testing SUB R2, R5, R3
+		$display("checking ALUout = R5 - R3");
+		asel = 1'b0;
+		bsel = 1'b0;
+		shift = 2'b00;
+		ALUop = 2'b01;
+		loadc = 1'b1;
+		#10;
+		data_checker(16'h13, 16'h42, 16'hFFD1, 1'bx, 16'hFFD1);
+
+		//Change in input: data_in = HEX 3, writenum = 2, readnum = 2
+		//Testing storing datapath_out in R2
+		$display("checking R2 = HEX -47");
+		writenum = 3'b010;
+		readnum = 3'b010;
+		vsel = 1'b0;
+		write = 1'b1;
+		datapath_in = 8'h21;
+		#10;
+		data_checker(16'hFFD1, 16'h42, 16'hFFD1, 1'bx, 16'hFFD1);	
+
+//Redoing all previous operation but with AND
+		//MOV R3, #42
+		$display("checking R3 = HEX 42");
+		writenum = 3'b011;
+		readnum = 3'b011;
+		datapath_in = 8'h42;
+		vsel = 1'b1;
+		#10;
+		data_checker(16'h42, 16'h42, 16'hFFD1, 1'bx, 16'hFFD1);
+		
+		//Change in input: writenum = 5, readnum = 5, data_in = h13
+		//MOV R5, #13
+		$display("checking R5 = HEX 13");
+		writenum = 3'b101;
+		readnum = 3'b101;
+		datapath_in = 8'h13;
+		#10;
+		data_checker(16'h13, 16'h42, 16'hFFD1, 1'bx, 16'hFFD1);
+		write = 1'b0; //set write to 0 so we can read values instead
+		
+		//Change in input: readnum = 3, loadb = 1, shift = 0
+		//store R3 in register B
+		$display("checking data_out = R3");
+		readnum = 3'b011;
+		loadb = 1'b1;
+		#10;
+		data_checker(16'h42, 16'h42, 16'hFFD1, 1'bx, 16'hFFD1);
+		loadb = 1'b0; //set loadb = 1
+		
+		//Change in input: readnum = 5, loada = 1
+		//store R5 in register A
+		$display("checking data_out = R5");
+		readnum = 3'b101;
+		loada = 1'b1;		
+		#10;
+		data_checker(16'h13, 16'h42, 16'hFFD1, 1'bx, 16'hFFD1);
+		loada = 1'b0;
+		
+		//Change in input: asel = 0, bsel = 0, shift = 0, ALUop = 2, loadc = 1
+		//Testing AND R2, R5, R3
+		$display("checking ALUout = R5 & R3");
+		asel = 1'b0;
+		bsel = 1'b0;
+		shift = 2'b00;
+		ALUop = 2'b10;
+		loadc = 1'b1;
+		#10;
+		data_checker(16'h13, 16'h42, 16'h2, 1'bx, 16'h2);
+
+		//Change in input: data_in = HEX 3, writenum = 2, readnum = 2
+		//Testing storing datapath_out in R2
+		$display("checking R2 = HEX 2");
+		writenum = 3'b010;
+		readnum = 3'b010;
+		vsel = 1'b0;
+		write = 1'b1;
+		datapath_in = 8'h21;
+		#10;
+		data_checker(16'h2, 16'h42, 16'h2, 1'bx, 16'h2);
+		
+//Redoing all previous operation but with NOT
+		//MOV R3, #42
+		$display("checking R3 = HEX 42");
+		writenum = 3'b011;
+		readnum = 3'b011;
+		datapath_in = 8'h42;
+		vsel = 1'b1;
+		#10;
+		data_checker(16'h42, 16'h42, 16'h2, 1'bx, 16'h2);
+		
+		//Change in input: writenum = 5, readnum = 5, data_in = h13
+		//MOV R5, #13
+		$display("checking R5 = HEX 13");
+		writenum = 3'b101;
+		readnum = 3'b101;
+		datapath_in = 8'h13;
+		#10;
+		data_checker(16'h13, 16'h42, 16'h2, 1'bx, 16'h2);
+		write = 1'b0; //set write to 0 so we can read values instead
+		
+		//Change in input: readnum = 3, loadb = 1, shift = 0
+		//store R3 in register B
+		$display("checking data_out = R3");
+		readnum = 3'b011;
+		loadb = 1'b1;
+		#10;
+		data_checker(16'h42, 16'h42, 16'h2, 1'bx, 16'h2);
+		loadb = 1'b0; //set loadb = 1
+		
+		//Change in input: readnum = 5, loada = 1
+		//store R5 in register A
+		$display("checking data_out = R5");
+		readnum = 3'b101;
+		loada = 1'b1;		
+		#10;
+		data_checker(16'h13, 16'h42, 16'h2, 1'bx, 16'h2);
+		loada = 1'b0;
+		
+		//Change in input: asel = 0, bsel = 0, shift = 0, ALUop = 3, loadc = 1
+		//Testing NOT R3
+		$display("checking ALUout = ~R3");
+		asel = 1'b0;
+		bsel = 1'b0;
+		shift = 2'b00;
+		ALUop = 2'b11;
+		loadc = 1'b1;
+		#10;
+		data_checker(16'h13, 16'h42, 16'hFFBD, 1'bx, 16'hFFBD);
+
+		//Change in input: data_in = HEX 3, writenum = 2, readnum = 2
+		//Testing storing datapath_out in R2
+		$display("checking R2 = HEX -43");
+		writenum = 3'b010;
+		readnum = 3'b010;
+		vsel = 1'b0;
+		write = 1'b1;
+		datapath_in = 8'h21;
+		#10;
+		data_checker(16'hFFBD, 16'h42, 16'hFFBD, 1'bx, 16'hFFBD);		
+		
+//Redoing all previous operation but with addtion using previous value
+		
+		//Change in input: writenum = 5, readnum = 5, data_in = h13
+		//MOV R5, #13
+		$display("checking R5 = HEX 13");
+		writenum = 3'b101;
+		readnum = 3'b101;
+		datapath_in = 8'h13;
+		vsel = 1'b1;
+		#10;
+		data_checker(16'h13, 16'h42, 16'hFFBD, 1'bx, 16'hFFBD);
+		write = 1'b0; //set write to 0 so we can read values instead
+		
+		//Change in input: readnum = 3, loadb = 1, shift = 0
+		//store R2 in register B
+		$display("checking data_out = R2");
+		readnum = 3'b010;
+		loadb = 1'b1;
+		#10;
+		data_checker(16'hFFBD, 16'hFFBD, 16'h42, 1'bx, 16'hFFBD);
+		loadb = 1'b0; //set loadb = 1
+		
+		//Change in input: readnum = 5, loada = 1
+		//store R5 in register A
+		$display("checking data_out = R5");
+		readnum = 3'b101;
+		loada = 1'b1;		
+		#10;
+		data_checker(16'h13, 16'hFFBD, 16'h42, 1'bx, 16'h42);
+		loada = 1'b0;
+		
+		//Change in input: asel = 0, bsel = 0, shift = 0, ALUop = 0, loadc = 1
+		//Testing ADD R27, R5, R2
+		$display("checking ALUout = R5 + R2");
+		asel = 1'b0;
+		bsel = 1'b0;
+		shift = 2'b00;
+		ALUop = 2'b00;
+		loadc = 1'b1;
+		#10;
+		data_checker(16'h13, 16'hFFBD, 16'hFFD0, 1'bx, 16'hFFD0);
+
+		//Change in input: data_in = HEX 3, writenum = 7, readnum = 7
+		//Testing storing datapath_out in R7
+		$display("checking R7 = HEX -30");
+		writenum = 3'b111;
+		readnum = 3'b111;
+		vsel = 1'b0;
+		write = 1'b1;
+		datapath_in = 8'h21;
+		#10;
+		data_checker(16'hFFD0, 16'hFFBD, 16'hFFD0, 1'bx, 16'hFFD0);		
+		
+//Redoing all previous operation but with addtion using previous value
+		
+		//Change in input: writenum = 5, readnum = 5, data_in = h13
+		//MOV R5, #30
+		$display("checking R5 = HEX 30");
+		writenum = 3'b101;
+		readnum = 3'b101;
+		datapath_in = 8'h30;
+		vsel = 1'b1;
+		#10;
+		data_checker(16'h30, 16'hFFBD, 16'hFFD0, 1'bx, 16'hFFD0);
+		write = 1'b0; //set write to 0 so we can read values instead
+		
+		//Change in input: readnum = 3, loadb = 1, shift = 0
+		//store R7 in register B
+		$display("checking data_out = R7");
+		readnum = 3'b111;
+		loadb = 1'b1;
+		#10;
+		data_checker(16'hFFD0, 16'hFFD0, 16'hFFE3, 1'bx, 16'hFFD0);
+		loadb = 1'b0; //set loadb = 1
+		
+		//Change in input: readnum = 5, loada = 1
+		//store R5 in register A
+		$display("checking data_out = R5");
+		readnum = 3'b101;
+		loada = 1'b1;		
+		#10;
+		data_checker(16'h30, 16'hFFD0, 16'h0, 1'bx, 16'hFFE3);
+		loada = 1'b0;
+		
+		//Change in input: asel = 0, bsel = 0, shift = 0, ALUop = 0, loadc = 1
+		//Testing ADD R6, R5, R7
+		$display("checking ALUout = R5 + R7");
+		asel = 1'b0;
+		bsel = 1'b0;
+		shift = 2'b00;
+		ALUop = 2'b00;
+		loadc = 1'b1;
+		loads = 1'b1;
+		#10;
+		data_checker(16'h30, 16'hFFD0, 16'h0, 1'b1, 16'h0);
+
+		//Change in input: data_in = HEX 3, writenum = 6, readnum = 6
+		//Testing storing datapath_out in R6
+		$display("checking R6 = HEX 0");
+		writenum = 3'b110;
+		readnum = 3'b110;
+		vsel = 1'b0;
+		write = 1'b1;
+		datapath_in = 8'h21;
+		#10;
+		data_checker(16'h0, 16'hFFD0, 16'h0, 1'b1, 16'h0);		
+		
+		
+		
+		#300;
+		
+	
+		
+		if (~err) $display("PASSED");
+		else $display ("FAILED");
+		$stop;
+	end
+
+
+endmodule: datapath_tb
